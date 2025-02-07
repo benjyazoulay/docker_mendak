@@ -21,10 +21,6 @@ load.lib <- c("shiny",
               "openxlsx"
 ) # Ce sont les paquets dont on va avoir besoin
 
-install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
-
-for (lib in install.lib) install.packages(lib,dependencies=TRUE) # On installe ceux-ci
-
 sapply(load.lib,require,character=TRUE) # Et on charge tous les paquets nécessaires
 
 french_stopwords<-read.csv2("french_stopwords.csv")
