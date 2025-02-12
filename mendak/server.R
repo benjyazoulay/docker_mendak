@@ -18,12 +18,25 @@ load.lib <- c("shiny",
               "ggrepel",
               "paletteer",
               "udpipe",
-              "openxlsx"
+              "openxlsx",
+              "stringr",
+              "ggthemes",
+              "tools",
+              "scales",
+              "RColorBrewer",
+              "bslib",
+              "tibble",
+              "parallel",
+              "forcats"
 ) # Ce sont les paquets dont on va avoir besoin
+
+install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
+
+for (lib in install.lib) install.packages(lib,dependencies=TRUE) # On installe ceux-ci
 
 sapply(load.lib,require,character=TRUE) # Et on charge tous les paquets nécessaires
 
-french_stopwords<-read.csv2("french_stopwords.csv")
+french_stopwords<-read.csv2("http://mathieuferry.github.io/datasets/french_stopwords.csv")
 
 options(shiny.maxRequestSize=100*1024^2)
 
@@ -446,30 +459,62 @@ server <- function(input, output, session) {
     data<-dataset()
     var <- input$var_uni
     if(is.numeric(data[[var]])) {
-      ggplot(dataset(), aes(x=!!sym(var))) + 
-        geom_histogram(binwidth=1)+
-        labs(title=paste("Histogram of", var),x=var)+
-        theme_minimal()+
-        theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+      if(input$axisflip_uni){
+        ggplot(dataset(), aes(x=forcats::fct_rev(!!sym(var)))) + 
+          geom_histogram(binwidth=1)+
+          labs(title=paste("Histogram of", var),x=var)+
+          coord_flip()+
+          theme_minimal()+
+          theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+      } else{
+        ggplot(dataset(), aes(x=!!sym(var))) + 
+          geom_histogram(binwidth=1)+
+          labs(title=paste("Histogram of", var),x=var)+
+          theme_minimal()+
+          theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+      }
       
     } else {
       result<-data %>% count(!!sym(var)) %>% mutate(proportion=round(n/sum(n)*100,2))
       if(input$calc_uni=="Frequency (N)"){
-        ggplot(data=result, aes(x=!!sym(var), y=n)) +
-          geom_bar(stat="identity")+
-          geom_text(aes(label=n), vjust=1.6, color="white", size=6)+
-          labs(title=paste("Barplot of", var),x=var)+
-          theme_minimal()+
-          theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+        if(input$axisflip_uni){
+          ggplot(data=result, aes(x=forcats::fct_rev(!!sym(var)), y=n)) +
+            geom_bar(stat="identity")+
+            geom_text(aes(label=n), hjust= 1.6,  color="white", size=6)+
+            labs(title=paste("Barplot of", var),x=var)+
+            coord_flip()+
+            theme_minimal()+
+            theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+        } else {
+          ggplot(data=result, aes(x=!!sym(var), y=n)) +
+            geom_bar(stat="identity")+
+            geom_text(aes(label=n), vjust=1.6, color="white", size=6)+
+            labs(title=paste("Barplot of", var),x=var)+
+            theme_minimal()+
+            theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+        }
+        
         
       }
       else{
-        ggplot(data=result, aes(x=!!sym(var), y=proportion)) +
-          geom_bar(stat="identity")+
-          geom_text(aes(label=paste0(round(proportion,1),"%")), vjust=1.6, color="white", size=6)+
-          labs(title=paste("Barplot of", var),x=var)+
-          theme_minimal()+
-          theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+        if(input$axisflip_uni){
+          ggplot(data=result, aes(x=forcats::fct_rev(!!sym(var)), y=proportion)) +
+            geom_bar(stat="identity")+
+            geom_text(aes(label=paste0(round(proportion,1),"%")),hjust= 1.6,  color="white", size=6)+
+            coord_flip()+
+            labs(title=paste("Barplot of", var),x=var)+
+            theme_minimal()+
+            theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+          
+        } else {
+          ggplot(data=result, aes(x=!!sym(var), y=proportion)) +
+            geom_bar(stat="identity")+
+            geom_text(aes(label=paste0(round(proportion,1),"%")), vjust=1.6, color="white", size=6)+
+            labs(title=paste("Barplot of", var),x=var)+
+            theme_minimal()+
+            theme(axis.text=element_text(size=18),axis.title=element_text(size=18))
+          
+        }
         
       }
     }
@@ -635,18 +680,24 @@ server <- function(input, output, session) {
     var_bi_exp <- data[[input$var_bi_exp]]
     
     if(is.numeric(var_bi) && is.factor(var_bi_exp)) {
+      
       ggplot(data, aes(x = !!sym(input$var_bi_exp), y = !!sym(input$var_bi))) +
         geom_boxplot() +
         labs(x = input$var_bi_exp, y = input$var_bi) +
         theme_minimal()+
         theme(axis.title = element_text(size=18),axis.text = element_text(size=18))
+      
+      
     } else if(is.numeric(var_bi) && is.numeric(var_bi_exp)) {
+      
       ggplot(data, aes(x = !!sym(input$var_bi_exp), y = !!sym(input$var_bi))) +
         geom_point() +
         geom_smooth(method = "lm") +
         labs(x = input$var_bi_exp, y = input$var_bi,caption=paste("Pearson's correlation: ",sprintf('%#.2f',cor(var_bi,var_bi_exp,use="complete.obs")))) +
         theme_minimal()+
         theme(axis.title = element_text(size=18),axis.text = element_text(size=18),plot.caption = element_text(size=18))
+      
+      
       
     } else if(is.factor(var_bi) && is.numeric(var_bi_exp)) {
       
@@ -934,7 +985,11 @@ server <- function(input, output, session) {
     if(input$remove_symbols) tokenc <- tokens(tokenc, remove_symbols = TRUE) %>% as.tokens()
     if(input$to_lower) tokenc <- tokens_tolower(tokenc)
     if(input$remove_stopwords) {
-      tokenc <- tokens_remove(tokenc, stopwords(input$stopwords_lang))
+      if(input$stopwords_lang %in% c("english", "french", "german", "spanish", "italian")){
+        tokenc <- tokens_remove(tokenc, stopwords(input$stopwords_lang))
+      }else if(input$stopwords_lang %in% c("french-bastin")){
+        tokenc <- tokens_remove(tokenc, french_stopwords$token)
+      }
     }
     if(input$remove_manualpwords & input$words_to_rm!="") {
       man_torm<-trimws(unlist(strsplit(input$words_to_rm,",")))
@@ -1147,17 +1202,17 @@ server <- function(input, output, session) {
       mutate(across(where(is.numeric), dense_rank, .names = "{.col}"))
     
     if (input$gda_method == "Principal Component Analysis") {
-      pca_res <- PCA(combined_matrixp, 
-                     scale.unit = TRUE, 
-                     graph = FALSE,
-                     quali.sup = quali_sup)
+      pca_res <- FactoMineR::PCA(combined_matrixp, 
+                                 scale.unit = TRUE, 
+                                 graph = FALSE,
+                                 quali.sup = quali_sup)
       return(list(type = "Principal Component Analysis", 
                   result = pca_res))
       
     } else {
-      ca_res <- CA(combined_matrix, 
-                   graph = FALSE,
-                   quali.sup = quali_sup)
+      ca_res <- FactoMineR::CA(combined_matrix, 
+                               graph = FALSE,
+                               quali.sup = quali_sup)
       return(list(type = "Correspondence Analysis", 
                   result = ca_res))
       
@@ -1486,7 +1541,7 @@ server <- function(input, output, session) {
       
       fcm<- fcm(dtmsplit, context="document")
       fcm_selected <- fcm_select(fcm, pattern = featsplit, selection = "keep")
-      textplot_network(fcm_selected)
+      textplot_network(fcm_selected,vertex_labelsize = input$coocc_size * rowSums(fcm_selected)/min(rowSums(fcm_selected)))
       
       
     } else if(input$what_coocc=="Co-occurrences between 50 most frequent features" & input$where_coocc=="Filtered corpus"){
@@ -1504,7 +1559,7 @@ server <- function(input, output, session) {
       
       fcm<- fcm(dtmsplit, context="document")
       fcm_selected <- fcm_select(fcm, pattern = featsplit, selection = "keep")
-      textplot_network(fcm_selected)
+      textplot_network(fcm_selected,vertex_labelsize = input$coocc_size * rowSums(fcm_selected)/min(rowSums(fcm_selected)))
       
       
     } else if(input$what_coocc=="Co-occurrences of a word" & input$word_coocc!="" & input$where_coocc=="Filtered corpus"){
@@ -1531,7 +1586,7 @@ server <- function(input, output, session) {
           coord_flip()+
           labs(y="Number of co-occurrences\nin segments",x=paste0("Most frequent words\nco-occurring with ",feat))+
           theme_minimal()+
-          theme(axis.text=element_text(size=15),axis.title = element_text(size=15))
+          theme(axis.text=element_text(size=15*input$coocc_size),axis.title = element_text(size=15))
         p
       },error = function(e) {
         showNotification(paste("Error reading file:", e$message), type = "error")
@@ -1557,7 +1612,7 @@ server <- function(input, output, session) {
           coord_flip()+
           labs(y="Number of co-occurrences\nin segments",x=paste0("Most frequent words\nco-occurring with ",feat))+
           theme_minimal()+
-          theme(axis.text=element_text(size=15),axis.title = element_text(size=15))
+          theme(axis.text=element_text(size=15*input$coocc_size),axis.title = element_text(size=15))
         p
       },error = function(e) {
         showNotification(paste("Error reading file:", e$message), type = "error")
@@ -1592,7 +1647,7 @@ server <- function(input, output, session) {
         result2 <- rainette(dtm, k = input$maxk,min_segment_size=input$minseg_dual2)
         #result2 <- rainette(dtm, k = 4,min_segment_size=15)
         
-        result <- rainette2(result1, result2, max_k = input$maxk,full = TRUE,parallel = TRUE)
+        result <- rainette2(result1, result2, max_k = input$maxk,full = FALSE,parallel = TRUE)
         #result <- rainette2(result1, result2, max_k = 4,full = TRUE,parallel = TRUE)
         
       }
@@ -1643,26 +1698,24 @@ server <- function(input, output, session) {
   #   print(table_data)
   # })
   
-  output$document_table <- renderTable({
+  output$document_table <- renderUI({
     req(clust(), input$selected_class)
     
     tryCatch({
-      
-      if(input$howclass=="Simple Descendant Hierarchical Classification"){
+      if (input$howclass == "Simple Descendant Hierarchical Classification") {
         class_assignments <- cutree_rainette(clust(), k = input$maxk)
-      }else if(input$howclass=="Dual Descendant Hierarchical Classification"){
+      } else if (input$howclass == "Dual Descendant Hierarchical Classification") {
         class_assignments <- cutree_rainette2(clust(), k = input$maxk)
-        
       }
       
       docs <- which(class_assignments == as.integer(input$selected_class))
       
-      if(input$whatclass == "Documents") {
+      if (input$whatclass == "Documents") {
         texts <- data.frame(
           Document_id = docs,
           Content = as.character(corpnotransf()[docs])
         )
-      } else if(input$whatclass == "Segments") {
+      } else if (input$whatclass == "Segments") {
         segment_ids <- docs
         segment_sources <- docvars(corpnotransfsplit())$segment_source[docs]
         contents <- as.character(corpnotransfsplit()[docs])
@@ -1670,26 +1723,41 @@ server <- function(input, output, session) {
         texts <- data.frame(
           Document_id = sub('text','',segment_sources),
           Segment_id = segment_ids,
-          
           Content = contents
         )
       }
       
       search_word <- input$search_word
       
-      if(nchar(search_word) > 0 && !is.null(texts$content)) {
-        texts <- texts[grep(search_word, texts$content, ignore.case = TRUE), ]
+      if (nchar(search_word) > 0 && !is.null(texts$Content)) {
+        texts <- texts[grep(search_word, texts$Content, ignore.case = TRUE), ]
+        
+        # Highlight occurrences of the search word
+        highlight_word <- function(text, word) {
+          gsub(paste0("(", word, ")"), "<mark>\\1</mark>", text, ignore.case = TRUE, perl = TRUE)
+        }
+        
+        texts$Content <- sapply(texts$Content, highlight_word, word = search_word)
       }
       
-      if(nrow(texts) > 0) {
-        texts
+      if (nrow(texts) > 0) {
+        HTML(
+          paste(
+            apply(texts, 1, function(row) {
+              paste0("<b>Document ID:</b> ", row["Document_id"], "<br>",
+                     if ("Segment_id" %in% names(row)) paste0("<b>Segment ID:</b> ", row["Segment_id"], "<br>") else "",
+                     "<b>Content:</b> ", row["Content"], "<hr>")
+            }),
+            collapse = ""
+          )
+        )
       } else {
-        data.frame(message = "No documents/segments found matching the criteria")
+        HTML("<p>No documents/segments found matching the criteria</p>")
       }
     }, error = function(e) {
-      data.frame(error = paste("An error occurred:", e$message))
+      HTML(paste("<p style='color: red;'>An error occurred:", e$message, "</p>"))
     })
-  }, sanitize.text.function = function(x) x)
+  })
   
   # Add cluster variable(s) --------------------
   
@@ -1800,11 +1868,11 @@ server <- function(input, output, session) {
       dtmclust <- dfm_group(dtmsplit(), groups = clustmemb)
       
     }
-    dtmdat <- cbind(convert(dtmclust, to = "data.frame"), docvars(dtmclust)) %>% column_to_rownames("doc_id")
+    dtmdat <- cbind(convert(dtmclust, to = "data.frame"), docvars(dtmclust)) %>% tibble::column_to_rownames("doc_id")
     
     dtmdatsel <- dtmdat %>% select(all_of(keytermsdat$feature))
     
-    ca <- CA(dtmdatsel, graph = FALSE)
+    ca <- FactoMineR::CA(dtmdatsel, graph = FALSE)
     
     coord <- data.frame(ca$col$coord) %>% rownames_to_column("feature")
     coord <- coord %>% left_join(keytermsdat, by = "feature")

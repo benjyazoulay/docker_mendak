@@ -18,13 +18,26 @@ load.lib <- c("shiny",
               "ggrepel",
               "paletteer",
               "udpipe",
-              "openxlsx"
+              "openxlsx",
+              "stringr",
+              "ggthemes",
+              "tools",
+              "scales",
+              "RColorBrewer",
+              "bslib",
+              "tibble",
+              "parallel",
+              "forcats"
 ) # Ce sont les paquets dont on va avoir besoin
+
+install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
+
+for (lib in install.lib) install.packages(lib,dependencies=TRUE) # On installe ceux-ci
 
 sapply(load.lib,require,character=TRUE) # Et on charge tous les paquets nécessaires
 
 #french_stopwords<-read.csv2("~/zPublish/shiny/mendak/french_stopwords.csv")
-french_stopwords<-read.csv2("french_stopwords.csv")
+french_stopwords<-read.csv2("http://mathieuferry.github.io/datasets/french_stopwords.csv")
 
 options(shiny.maxRequestSize=100*1024^2)
 
@@ -108,7 +121,9 @@ ui <- fluidPage(
                                  sidebarLayout(
                                    sidebarPanel(
                                      uiOutput("var_select_uni"),
-                                     uiOutput("var_calc_uni")
+                                     uiOutput("var_calc_uni"),
+                                     checkboxInput("axisflip_uni", "Flip x and y axes", FALSE),
+                                     
                                      
                                    ),
                                    mainPanel(
@@ -280,7 +295,9 @@ ui <- fluidPage(
                                    ),
                                    mainPanel(
                                      plotOutput("plot_coocc",width = "100%",
-                                                height = "800px")
+                                                height = "800px"),
+                                     br(),
+                                     sliderInput("coocc_size", "Control label size", min = 0.01, max = 10, value = 1)
                                    ) 
                                  )
                         ),
@@ -324,7 +341,7 @@ ui <- fluidPage(
                                                 uiOutput("class_selector"),
                                                 textInput("search_word", "Filter documents (type to search):", ""),
                                                 
-                                                tableOutput("document_table")
+                                                uiOutput("document_table")
                                                 
                                        ),
                                        tabPanel("Correspondance Analysis",

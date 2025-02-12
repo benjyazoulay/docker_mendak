@@ -43,6 +43,10 @@ RUN R -e "install.packages(c('ggplot2','plotly','stringr','Hmisc','xml2','shinyt
 
 RUN R -e 'install.packages(c("DT", "sortable", "tidyverse", "quanteda", "rainette", "wordcloud", "readxl", "writexl", "quanteda.textplots", "quanteda.textstats", "FactoMineR", "factoextra", "ggpubr", "ggrepel", "paletteer", "udpipe", "openxlsx"))'
 
+RUN R -e 'install.packages(c("stringr","ggthemes","tools","scales","RColorBrewer","bslib","tibble","parallel","forcats"), repos="https://cloud.r-project.org/")'
+
+
+
 # copy the app to the image
 RUN mkdir /root/mendak
 COPY mendak /root/mendak
