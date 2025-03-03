@@ -414,6 +414,58 @@ server <- function(input, output, session) {
     }
   )
   
+  
+  
+  # Panel for visualizing text ----------------------------------------------
+  
+  output$textvar_selector <- renderUI({
+    req(dataset())
+    char_vars <- names(dataset())[sapply(dataset(), is.character)]
+    selectInput("text_var0", "Select Text Variable:", choices = char_vars)
+  })
+  
+  selected_texts <- reactive({
+    req(dataset(), input$text_var0) 
+    dataset()[, input$text_var0, drop = FALSE] # Ensuring it's a data frame
+  })
+  
+  filtered_texts <- reactive({
+    req(selected_texts())
+    text_column <- selected_texts()[[1]]  # Extract selected text column
+    
+    if (input$search_wordintext == "") {
+      return(data.frame(id = seq_along(text_column), text = text_column, stringsAsFactors = FALSE))
+    } else {
+      matched_indices <- grepl(input$search_wordintext, text_column, ignore.case = TRUE)
+      data.frame(id = which(matched_indices), text = text_column[matched_indices], stringsAsFactors = FALSE)
+    }
+  })
+  
+  
+  output$document_table0 <- renderUI({
+    texts <- filtered_texts()
+    
+    if (nrow(texts) == 0) {
+      return(HTML("<p>No matching documents found.</p>"))
+    }
+    
+    # Apply highlighting
+    highlighted_texts <- lapply(1:nrow(texts), function(i) {
+      txt <- texts$text[i]
+      if (input$search_wordintext != "") {
+        highlight <- paste0("<span style='background-color: yellow;'>", input$search_wordintext, "</span>")
+        txt <- gsub(input$search_wordintext, highlight, txt, ignore.case = TRUE)
+      }
+      paste0("<p><strong>", texts$id[i], ".</strong> ", txt, "</p>")
+    })
+    
+    HTML(paste(highlighted_texts, collapse = ""))
+  })
+  
+  
+  
+  
+  
   # Univariate analysis ---------------
   output$var_select_uni <- renderUI({
     req(dataset())

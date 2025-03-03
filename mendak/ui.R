@@ -106,9 +106,17 @@ ui <- fluidPage(
                                    )
                                  )
                         ),
-                        tabPanel("View",
+                        tabPanel("View dataframe",
                                  DTOutput("data_view")
+                        ),
+                        tabPanel("View text(s)",
+                                 uiOutput("textvar_selector"),
+                                 textInput("search_wordintext", "Filter documents (type to search):", ""),
+                                 
+                                 uiOutput("document_table0")
+                                 
                         )
+                        
                         
              ),
              

@@ -41,7 +41,7 @@ RUN R -e "install.packages(c('shiny', 'rmarkdown'), repos='https://cloud.r-proje
 
 RUN R -e "install.packages(c('ggplot2','plotly','stringr','Hmisc','xml2','shinythemes','htmlwidgets','httr','ngramr','dplyr','htmltools'), repos='https://cloud.r-project.org/')"
 
-RUN R -e 'install.packages(c("DT", "sortable", "tidyverse", "quanteda", "rainette", "wordcloud", "readxl", "writexl", "quanteda.textplots", "quanteda.textstats", "FactoMineR", "factoextra", "ggpubr", "ggrepel", "paletteer", "udpipe", "openxlsx"))'
+RUN R -e 'install.packages(c("DT", "sortable", "tidyverse", "quanteda", "rainette", "wordcloud", "readxl", "writexl", "quanteda.textplots", "quanteda.textstats", "FactoMineR", "factoextra", "ggpubr", "ggrepel", "paletteer", "udpipe", "openxlsx"),repos="https://cloud.r-project.org/")'
 
 RUN R -e 'install.packages(c("stringr","ggthemes","tools","scales","RColorBrewer","bslib","tibble","parallel","forcats"), repos="https://cloud.r-project.org/")'
 
