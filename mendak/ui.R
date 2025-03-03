@@ -113,7 +113,7 @@ ui <- fluidPage(
                                  uiOutput("textvar_selector"),
                                  textInput("search_wordintext", "Filter documents (type to search):", ""),
                                  
-                                 uiOutput("document_table0")
+                                 DTOutput("document_table0")
                                  
                         )
                         

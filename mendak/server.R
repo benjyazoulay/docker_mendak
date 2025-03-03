@@ -419,8 +419,8 @@ server <- function(input, output, session) {
   # Panel for visualizing text ----------------------------------------------
   
   output$textvar_selector <- renderUI({
-    req(dataset())
-    char_vars <- names(dataset())[sapply(dataset(), is.character)]
+    req(dataset()) 
+    char_vars <- names(dataset())[sapply(dataset(), is.character)] 
     selectInput("text_var0", "Select Text Variable:", choices = char_vars)
   })
   
@@ -442,24 +442,33 @@ server <- function(input, output, session) {
   })
   
   
-  output$document_table0 <- renderUI({
+  output$document_table0 <- renderDT({
     texts <- filtered_texts()
     
     if (nrow(texts) == 0) {
-      return(HTML("<p>No matching documents found.</p>"))
+      return(DT::datatable(data.frame(Message = "No matching documents found"), options = list(dom = 't')))
     }
     
     # Apply highlighting
-    highlighted_texts <- lapply(1:nrow(texts), function(i) {
-      txt <- texts$text[i]
+    texts$text <- sapply(texts$text, function(txt) {
       if (input$search_wordintext != "") {
         highlight <- paste0("<span style='background-color: yellow;'>", input$search_wordintext, "</span>")
-        txt <- gsub(input$search_wordintext, highlight, txt, ignore.case = TRUE)
+        gsub(input$search_wordintext, highlight, txt, ignore.case = TRUE)
+      } else {
+        txt
       }
-      paste0("<p><strong>", texts$id[i], ".</strong> ", txt, "</p>")
     })
     
-    HTML(paste(highlighted_texts, collapse = ""))
+    DT::datatable(
+      texts, 
+      escape = FALSE,  # Allow HTML for highlighting
+      rownames = FALSE,
+      options = list(
+        pageLength = 5,   # Number of rows per page
+        lengthMenu = c(5, 10, 20),  # User can change page length
+        autoWidth = TRUE
+      )
+    )
   })
   
   
