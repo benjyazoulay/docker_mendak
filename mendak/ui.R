@@ -27,7 +27,9 @@ load.lib <- c("shiny",
               "bslib",
               "tibble",
               "parallel",
-              "forcats"
+              "forcats",
+              "esquisse",
+              "lubridate"
 ) # Ce sont les paquets dont on va avoir besoin
 
 install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
@@ -41,6 +43,10 @@ french_stopwords<-read.csv2("http://mathieuferry.github.io/datasets/french_stopw
 
 options(shiny.maxRequestSize=100*1024^2)
 
+
+source("mod_esquisse.R")
+
+
 # UI
 ui <- fluidPage(
   
@@ -52,7 +58,7 @@ ui <- fluidPage(
   
   
   navbarPage("Mendak",
-             theme = bslib::bs_theme(bootswatch = "sandstone"),
+             theme = bslib::bs_theme(version = 5,bootswatch = "sandstone"),
              
              # Welcome ------------------
              tabPanel("Welcome",
@@ -76,6 +82,8 @@ ui <- fluidPage(
     <p>This shiny app has been written to facilitate statistical analyses for non-R users (and non-coders). 
     Short tutorials in <a href='https://mathieuferry.github.io/Tutorials-for-Mendak/TutorialEN.html'>English</a> or in <a href='https://mathieuferry.github.io/Tutorials-for-Mendak/TutorielFR.html'>French</a> presenting the functionalities of the app are available.
     Some of the tools available here follow the statistical outline presented in this <a href='https://mathieuferry.github.io/PondicherryWorkshop/'>tutorial</a> to conduct these analyses in the R console.</p>
+    
+    <p><i>Latest update of the app: April 25, 2025</i></p>
     
     <center><img src='https://cdn.pixabay.com/photo/2020/06/20/01/24/frog-5319326_1280.jpg' width='700' 
      height='500' alt='A nice and funny picture of a frog' ></center>
@@ -153,7 +161,11 @@ ui <- fluidPage(
                                      plotOutput("bivariate_plot")
                                    )
                                  )
-                        )
+                        ),
+                        tabPanel("Exploration graphique", mod_esquisse_ui("explore"))
+                        
+                                 
+                                 
              ),
              
              #UI textual -------------------

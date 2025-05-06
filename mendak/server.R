@@ -27,7 +27,9 @@ load.lib <- c("shiny",
               "bslib",
               "tibble",
               "parallel",
-              "forcats"
+              "forcats",
+              "esquisse",
+              "lubridate"
 ) # Ce sont les paquets dont on va avoir besoin
 
 install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
@@ -39,6 +41,8 @@ sapply(load.lib,require,character=TRUE) # Et on charge tous les paquets nécessa
 french_stopwords<-read.csv2("http://mathieuferry.github.io/datasets/french_stopwords.csv")
 
 options(shiny.maxRequestSize=100*1024^2)
+
+
 
 
 # Server
@@ -819,6 +823,27 @@ server <- function(input, output, session) {
         theme_void()
     }
   })  
+  # Esquisse -----------------
+  mod_esquisse_server("explore", dataset)
+  
+  # # Déclaration en haut
+  # data_r <- reactiveValues(data = NULL, name = NULL)
+  # 
+  # # Met à jour le contenu du reactiveValues quand le dataset change
+  # observe({
+  #   req(dataset())
+  #   data_r$data <- dataset()
+  #   data_r$name <- "Corpus"
+  # })
+  # 
+  # # Initialise une seule fois le module
+  # results <- esquisse_server(
+  #   id = "esquisse",
+  #   data_rv = data_r
+  # )
+  
+  
+  
   # Textual analysis -----------------
   output$text_var_select <- renderUI({
     req(dataset())
@@ -1015,6 +1040,10 @@ server <- function(input, output, session) {
     tokenc<-tokens_select(tokenc,min_nchar=input$minwordsize)
     dtm <- dfm(tokenc, tolower = T)
     dtm <- dfm_trim(dtm, min_docfreq = input$minwordsmention)
+    
+    session$sendCustomMessage(type = 'datasetUpdated', message = list())
+    
+    
     dtm
   })
   
@@ -1076,22 +1105,33 @@ server <- function(input, output, session) {
           "\nAverage number of words (tokens) per non-empty document:", round(mean(corpsumnonempty$tokens,na.rm=T),0))
   })
   
+  freq_table <- eventReactive(input$clean_text, {
+    req(dtm())
+    textstat_frequency(dtm()) %>% 
+      select(-group)
+  })
   
   output$freq_terms_table <- renderDT({
-    req(dtm())
-    freq <- textstat_frequency(dtm()) %>% select(-group)
-    datatable(freq,caption="Frequency is the count of the feature (word) in the whole corpus.\n
+    req(freq_table())
+    datatable(freq_table(),caption="Frequency is the count of the feature (word) in the whole corpus.\n
              Rank is the rank of the frequency (1 is the greatest frequency).\n
              Docfreq is the document frequency (the number of documents in which this feature occurred at least once).")
   })
   
   
   output$wordcloud <- renderPlot({
-    req(dtm())
-    textplot_wordcloud(dtm(), random_order = F, rotation = 0.25,min_size =1,max_words = input$maxwords,
-                       color = RColorBrewer::brewer.pal(8, "Dark2"))
+    req(freq_table(),dtm())
+    dtm_reduced <- dtm()[, freq_table()$feature[1:input$maxwords]]  # Only most frequent words
     
-  },width=500,height=500)
+    textplot_wordcloud(
+      dtm_reduced,
+      random_order = FALSE,
+      rotation = 0.25,
+      min_size = 1,
+      max_words = input$maxwords,
+      color = RColorBrewer::brewer.pal(8, "Dark2")
+    )
+  }, width = 500, height = 500)
   
   # madfm <- dfm_group(dtm, groups=sample_data$Sex)
   
