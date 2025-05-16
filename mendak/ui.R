@@ -32,14 +32,11 @@ load.lib <- c("shiny",
               "lubridate"
 ) # Ce sont les paquets dont on va avoir besoin
 
-install.lib <- load.lib[!load.lib %in% installed.packages()] # On regarde les paquets qui ne sont pas installés
-
-for (lib in install.lib) install.packages(lib,dependencies=TRUE) # On installe ceux-ci
 
 sapply(load.lib,require,character=TRUE) # Et on charge tous les paquets nécessaires
 
 #french_stopwords<-read.csv2("~/zPublish/shiny/mendak/french_stopwords.csv")
-french_stopwords<-read.csv2("http://mathieuferry.github.io/datasets/french_stopwords.csv")
+french_stopwords<-read.csv2("french_stopwords.csv")
 
 options(shiny.maxRequestSize=100*1024^2)
 
