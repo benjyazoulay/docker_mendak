@@ -34,6 +34,11 @@ RUN apt-get update && apt-get install -y \
 	cmake \
 	&& rm -rf /var/lib/apt/lists/*
 
+ RUN apt-get update && apt-get install -y \
+	libharfbuzz-dev \
+    	libfribidi-dev \
+	&& rm -rf /var/lib/apt/lists/*
+
 RUN apt-get update && apt-get upgrade --yes
 
 # basic shiny functionality
@@ -45,7 +50,7 @@ RUN R -e 'install.packages(c("DT", "sortable", "tidyverse", "quanteda", "rainett
 
 RUN R -e 'install.packages(c("stringr","ggthemes","tools","scales","RColorBrewer","bslib","tibble","parallel","forcats","esquisse","lubridate"), repos="https://cloud.r-project.org/")'
 
-RUN R -e 'install.packages(c("FactoMineR","factoextra","ggpubr","tidyverse"), repos="https://cloud.r-project.org/")'
+RUN R -e 'install.packages(c("FactoMineR","factoextra","ggpubr","tidyverse"), dependencies=TRUE, repos="https://cloud.r-project.org/")'
 
 # copy the app to the image
 RUN mkdir /root/mendak
