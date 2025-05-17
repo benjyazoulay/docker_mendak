@@ -35,6 +35,7 @@ load.lib <- c("shiny",
 
 
 sapply(load.lib,require,character=TRUE) # Et on charge tous les paquets nécessaires
+library("FactoMineR")
 
 french_stopwords<-read.csv2("french_stopwords.csv")
 
