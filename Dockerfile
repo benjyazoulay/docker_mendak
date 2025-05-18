@@ -1,9 +1,9 @@
 FROM openanalytics/r-base
 
-MAINTAINER Tobias Verbeke "tobias.verbeke@openanalytics.eu"
+LABEL maintainer="Tobias Verbeke <tobias.verbeke@openanalytics.eu>"
 
-# system libraries of general use
-RUN apt-get update && apt-get install -y \
+# Mise à jour et installation des dépendances système
+RUN apt-get update && apt-get install -y --no-install-recommends \
     sudo \
     pandoc \
     pandoc-citeproc \
@@ -15,49 +15,38 @@ RUN apt-get update && apt-get install -y \
     libssl1.1 \
     libxml2-dev \
     libgdal-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-# system library dependency for the gallicagram app
-RUN apt-get update && apt-get install -y \
     libmpfr-dev \
-    && rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update && apt-get install -y \
     libudunits2-dev \
+    libnlopt-dev \
+    cmake \
+    libharfbuzz-dev \
+    libfribidi-dev \
+    && apt-get clean \
     && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y \
-	libnlopt-dev \
-	&& rm -rf /var/lib/apt/lists/*
+# Mise à jour finale des paquets
+RUN apt-get update && apt-get upgrade -y && apt-get clean && rm -rf /var/lib/apt/lists/*
 
-RUN apt-get update && apt-get install -y \
-	cmake \
-	&& rm -rf /var/lib/apt/lists/*
+# Installation des packages R nécessaires
+RUN R -e "install.packages(c( \
+    'shiny', 'rmarkdown', 'ggplot2', 'plotly', 'stringr', 'Hmisc', 'xml2', \
+    'shinythemes', 'htmlwidgets', 'httr', 'ngramr', 'dplyr', 'htmltools', \
+    'DT', 'sortable', 'tidyverse', 'quanteda', 'rainette', 'wordcloud', \
+    'readxl', 'writexl', 'quanteda.textplots', 'quanteda.textstats', \
+    'FactoMineR', 'factoextra', 'ggpubr', 'ggrepel', 'paletteer', 'udpipe', \
+    'openxlsx', 'ggthemes', 'tools', 'scales', 'RColorBrewer', 'bslib', \
+    'tibble', 'parallel', 'forcats', 'esquisse', 'lubridate' \
+), dependencies=TRUE, repos='https://cloud.r-project.org/')"
 
- RUN apt-get update && apt-get install -y \
-	libharfbuzz-dev \
-    	libfribidi-dev \
-	&& rm -rf /var/lib/apt/lists/*
-
-RUN apt-get update && apt-get upgrade --yes
-
-# basic shiny functionality
-RUN R -e "install.packages(c('shiny', 'rmarkdown'), repos='https://cloud.r-project.org/')"
-
-RUN R -e "install.packages(c('ggplot2','plotly','stringr','Hmisc','xml2','shinythemes','htmlwidgets','httr','ngramr','dplyr','htmltools'), repos='https://cloud.r-project.org/')"
-
-RUN R -e 'install.packages(c("DT", "sortable", "tidyverse", "quanteda", "rainette", "wordcloud", "readxl", "writexl", "quanteda.textplots", "quanteda.textstats", "FactoMineR", "factoextra", "ggpubr", "ggrepel", "paletteer", "udpipe", "openxlsx"),repos="https://cloud.r-project.org/")'
-
-RUN R -e 'install.packages(c("stringr","ggthemes","tools","scales","RColorBrewer","bslib","tibble","parallel","forcats","esquisse","lubridate"), repos="https://cloud.r-project.org/")'
-
-RUN R -e 'install.packages(c("FactoMineR","factoextra","ggpubr","tidyverse"), dependencies=TRUE, repos="https://cloud.r-project.org/")'
-
-# copy the app to the image
-RUN mkdir /root/mendak
+# Ajout de l'application Shiny
+RUN mkdir -p /root/mendak
 COPY mendak /root/mendak
 
+# Configuration R
 COPY Rprofile.site /usr/lib/R/etc/
 
+# Port d'exposition
 EXPOSE 3838
 
+# Commande de lancement
 CMD ["R", "-e", "shiny::runApp('/root/mendak')"]
